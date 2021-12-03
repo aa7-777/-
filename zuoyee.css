@@ -1,0 +1,9 @@
+body {
+    background-color: #070706;
+}
+
+path {
+    fill: rgb(8, 136, 187);
+    stroke: rgb(29, 25, 25);
+    stroke-opacity: 0.1;
+}
