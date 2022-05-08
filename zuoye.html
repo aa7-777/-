@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BarChart! </title>
+    <script src="https://github.com/aa7-777/-/blob/branch_1/d3.min.js"></script>
+    <script src="https://github.com/aa7-777/-/blob/branch_1/library/moment.min.js"></script>
+    <script src="https://github.com/aa7-777/-/blob/branch_1/js/color-strategies.js"></script>
+    <link rel="stylesheet" href="https://github.com/aa7-777/-/blob/branch_1/zuoyee.css">
+  </head>
+  <body>
+
+    <svg width="1000" height="650" id="mainsvg" class="svgs"></svg>
+    <script>
+
+        const svg = d3.select('#mainsvg');
+        const width = +svg.attr('width');
+        const height = +svg.attr('height');
+        const margin = {top: 60, right: 30, bottom: 60, left: 150};
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        const g = svg.append('g').attr('id', 'maingroup')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+        const rwidth = d => { return xScale(d.TAVG) };
+
+        const xValue = (datum) => {return datum['TAVG']};
+        const yValue = (datum) => {return datum['yue']};
+        let xSacle, yScale; 
+        let alldates;
+        let allkeys; 
+        let aduration=3000;
+       let color;
+        
+
+        let test= null;
+
+
+       let index=0;
+
+        const render_init = function(data){
+
+         xScale = d3.scaleLinear()
+        .domain([0, d3.max(data, datum=>datum.TAVG)])
+        .range([0, innerWidth])
+        .nice(); 
+
+         yScale = d3.scaleBand().
+        domain(data.map(datum => new Date(datum.key)))
+        .range([0, innerHeight])
+        .padding(0.1);
+
+        color = d3.scaleOrdinal()
+      .domain([0,11])
+      .range( d3.schemeSet3)
+
+        g.selectAll('.datarect').data(data,data =>data['Date']).enter().append('rect')
+        .attr('class', 'datarect')
+        .attr('width', d =>  xScale(d.TAVG))
+        .attr('height', yScale.bandwidth())
+        .attr('y', datum => yScale(new Date(datum.key)))
+        .attr('fill',d =>color(d.key))
+        .attr('opacity', '0')
+
+         yAxis = d3.axisLeft(yScale)
+         
+         .tickFormat(d3.timeFormat('%b'))
+         ;
+         xAxis = d3.axisBottom(xScale);
+        g.append('g').call(yAxis);
+        g.append('g').call(xAxis).attr('id', 'xaxis')
+        .attr('transform', `translate(0, ${innerHeight})`);
+
+        
+        d3.selectAll('.tick text').attr('font-size', '1.5em')
+        .attr('fill','white');
+
+        g.append('text').text('1957年青岛每日平均温度').attr('font-size', '2em').attr('fill','white')
+        .attr('x', innerWidth / 2 - 200).attr('y', -10)
+
+
+        g.append('text').text('TAVG (Degrees Fahrenheit)').attr('font-size', '1.5em').attr('fill','white')
+        .attr('x', innerWidth / 2 - 200).attr('y', innerHeight+40)
+
+        };
+
+
+        const render_update_alter = function(data){
+          
+        const g=d3.select('#maingroup');
+
+        let  rectUpdates=g.selectAll('rect').data(data,d =>d['yue']);
+        rectEnter= rectUpdates.enter().append('rect')
+        .attr('width', data=>xScale(data['TAVG']))
+        .attr('fill', d=>color(Math.random()*20%12))
+        .attr('opacity', 0.8)
+        .remove()
+          
+        rectUpdates.merge(rectEnter)
+        .transition().ease(d3.easeLinear).duration(2000)
+        .attr('width', data=>xScale(data['TAVG']))
+        .attr('fill', d=>color(Math.random()*20%12))
+        .attr("opacity", 1);
+          d3.selectAll('.rect_text').remove()
+        textupdates = g.selectAll('.datatext').data(data, d =>d['main']);
+            textenter = textupdates.enter().append('text')
+            .attr("class", "rect_text")
+            .attr("x", (datum) => { return xScale(xValue(datum))  })
+            .attr('y', datum => yScale(new Date(datum['key'])))
+            .attr("dy", "1.5em")
+            .style("text-anchor", "left")
+            .attr("fill", "#333333")
+            .text( d=>{return (d['TAVG']+"")}
+            );
+            textupdates.merge(textenter).transition().ease(d3.easeLinear).duration(1000)
+            .attr("x", (datum) => { return xScale(xValue(datum))  })
+            .attr('y', datum => yScale(new Date(datum['key'])))
+            .attr('fill', () => color(Math.random()*20%12))
+    }
+
+
+    		d3.csv('https://github.com/aa7-777/-/blob/branch_1/data1.csv').then(function(data){
+          data.forEach( d=> {
+         d['TAVG'] =+ (d['TAVG (Degrees Fahrenheit)']);
+         d['Date'] = new Date(d['Date']);
+         let lastmoment = moment(d['Date'], 'Y年M月D日', 'en', true)
+         d['Date'] = lastmoment.date(lastmoment.date()).format('Y/M/D')
+         d['key']=lastmoment.date(lastmoment.date()).format('Y/M')
+         d['main']=lastmoment.date(lastmoment.date()).format('D')
+         d['yue']=lastmoment.date(lastmoment.date()).format('M')
+       });
+       alldates = Array.from(new Set(data.map(d => d['main'])));
+            //console.log(alldates)
+            console.log(alldates)
+            alldates = alldates.sort((a,b) => {
+                return new Date(a)-new Date(b);
+            })
+
+            sequantial = [];
+
+            alldates.forEach(d => {
+                sequantial.push([])
+            });
+            data.forEach( d => {
+                sequantial[ alldates.indexOf(d['main']) ].push(d);
+            })
+       console.log(sequantial[0])
+       console.log(sequantial)
+       render_init(data);
+       let c = 0;
+       let intervalId = setInterval(() => {
+           if(c >= alldates.length){
+               clearInterval(intervalId);
+           }else{
+               render_update_alter(sequantial[c]);
+               c = c + 1;
+           }
+       }, 2000);
+
+   });
+
+    </script>
+  </body>
+</html>
